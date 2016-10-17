@@ -85,30 +85,69 @@ public class AutoSummary {
 	
 	public String generateSummary(String input){
 		//处理字符串，得到星期、开始时间、结束时间、人数
-		String date = input.substring(0, input.indexOf(" "));
-		input = input.substring(input.indexOf(" ")+1, input.length());
-		int begin = Integer.parseInt(input.substring(0, input.indexOf(":")));
-		input = input.substring(input.indexOf("~")+1, input.length());
-		int end = Integer.parseInt(input.substring(0, input.indexOf(":")));
-		input = input.substring(input.indexOf(" ")+1, input.length());
-		int num = Integer.parseInt(input);		
+		String date = foreSubString(input," ");
+		input = backSubString(input," ");
+		int begin = Integer.parseInt(foreSubString(input,":"));
+		input = backSubString(input,"~");
+		int end = Integer.parseInt(foreSubString(input,":"));
+		input = backSubString(input," ");
+		int num = Integer.parseInt(input);	
+		
+		//调用函数获得数据
 		String week = getWeek(date);  
 		int fee = getFee(week,begin,end);
 		int gnum = getGroundNum(num);
-		int income = 0;
-		if(gnum>0){income = num*30;}		
+		int income = gnum>0?num*30:0;	
 		f_income += income;
 		int payment = fee*gnum;
 		f_payment += payment;
 		int profit = income-payment;
 		f_profit += profit;
+		
+		//生成输出字符串
 		String final_profit = profit>0?("+"+profit):(""+profit);
 		String final_begin = begin<10?("0"+begin):(""+begin);
 		String output = date+" "+final_begin+":00~"+end+":00 +"+income+" -"+payment+" "+final_profit;
-		/*if(begin<10){
-			output = date+" 0"+begin+":00~"+end+":00 +"+income+" -"+payment+" "+profit;
-		}*/
+		
 		return output; 
+	}
+	
+	/**
+
+	* 输出分隔符之前的字串
+
+	*@param input
+	*输入字符串
+	*@param str
+	*分隔符
+	         
+	*@return output
+	*输出字符串
+
+	
+	**/
+	
+	public String foreSubString(String input,String str){
+		return input.substring(0, input.indexOf(str));		
+	}
+	
+	/**
+
+	* 输出分隔符之后的字串
+
+	*@param input
+	*输入字符串
+	*@param str
+	*分隔符
+	         
+	*@return output
+	*输出字符串
+
+	
+	**/
+	
+	public String backSubString(String input,String str){
+		return input.substring(input.indexOf(str)+1,input.length());		
 	}
 	
 
@@ -142,93 +181,105 @@ public class AutoSummary {
 	
 	/**
 
+	* 输入周几、时间， 返回单位时间费用
+
+	*@param week
+	*周几
+	*@param time
+	*时间
+	         
+	*@return singele_fee
+	*单位时间费用
+	
+	**/
+	public int singleFee(String week,int time){
+		int single_fee = 0;
+		int week_change = 10;
+		if(week == "星期六" || week == "星期日"){
+			week_change = 0;
+		}
+		if(time>=9&&time<12){
+			single_fee = 40 - week_change;
+		}
+		else if(time>=12&&time<18){
+			single_fee = 50;
+		}
+		else if(time>=18&&time<20){
+			single_fee = 60 + week_change*2;
+		}
+		else if(time>=20&&time<=22){
+			single_fee = 60;
+		}
+		else{
+			System.out.println("time wrong");
+		}
+		return single_fee;
+	}
+	
+	/**
+
+	* 输入周几、结束时间， 返回结束时间之前的一个分界点
+
+	*@param week
+	*周几
+	*@param time
+	*时间
+	         
+	*@return inter
+	*结束时间之前的一个分界点
+	
+	**/
+	
+	public int getInter(String week,int time){
+		int inter = 12;
+		if(week == "星期六" || week == "星期日"){
+			if(time>=18){
+				inter = 18;
+			}
+		}
+		else{
+			if(time>=20){
+				inter = 20;
+			}
+			else if(time>=18){
+				inter = 18;
+			}
+		}
+		return inter;
+	}
+	
+	/**
+
 	* 输入周几、开始时间、结束时间， 返回费用
 
-	*@param week begin end
-	*周几、开始时间、结束时间
+	*@param week
+	*周几
+	*@param begin
+	*开始时间
+	*@param end
+	*结束时间
 	         
 	*@return fee
 	*费用
 	
 	**/
+	
 	public int getFee(String week,int begin,int end){
 		int fee = 0;
-		if(week == "星期六" || week == "星期日"){
-			if(begin>=9&&begin<12){
-				if(end<=12){
-					fee = (end-begin)*40;
-				}
-				else if(end>12){
-					fee = (end-12)*50 + (12-begin)*40;
-				}
-				else{
-					System.out.println("end time wrong");
-				}
-			}
-			else if(begin>=12&&begin<18){
-				if(end<=18){
-					fee = (end-begin)*50;
-				}
-				else if(end>18){
-					fee = (end-18)*60 + (18-begin)*50;
-				}
-				else{
-					System.out.println("end time wrong");
-				}
-			}
-			else if(begin>=18){
-				if(end<=22){
-					fee = (end-begin)*60;
-				}				
-				else{
-					System.out.println("end time wrong");
-				}
-			}
-			else{
-				System.out.println("begin time wrong");
-			}
+		int begin_fee = singleFee(week,begin);
+		int end_fee = singleFee(week,end);
+		if(end_fee == begin_fee){
+			fee = (end-begin)*begin_fee;
 		}
 		else{
-			if(begin>=9&&begin<12){
-				if(end<=12){
-					fee = (end-begin)*30;
-				}
-				else if(end>12){
-					fee = (end-12)*50 + (12-begin)*30;
-				}
-				else{
-					System.out.println("end time wrong");
-				}
-			}
-			else if(begin>=12&&begin<18){
-				if(end<=18){
-					fee = (end-begin)*50;
-				}
-				else if(end>18&&end<=20){
-					fee = (end-18)*80 + (18-begin)*50;
-				}
-				else{
-					System.out.println("end time wrong");
-				}
-			}
-			else if(begin>=18&&begin<=20){
-				if(end<=20){
-					fee = (end-begin)*80;
-				}
-				else if(end>20&&end<=22){
-					fee = (end-20)*60 + (20-begin)*80;
-				}
-				else{
-					System.out.println("end time wrong");
-				}
-			}
-			else{
-				System.out.println("begin time wrong");
-			}
+			int inter = getInter(week,end);
+			fee = (end-inter)*end_fee + (inter-begin)*begin_fee;
+			
 		}
 		return fee;
 	}
 	
+
 	/**
 
 	* 输入人数， 返回场地数
